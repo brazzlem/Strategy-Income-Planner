@@ -43,7 +43,7 @@ A free, single-file income planning tool built for retail investors holding Stra
 4. Enter your starting investment, DCA amount, and projection period
 5. Results update instantly — no button to click
 
-**Live version:** [brazzlematt.github.io/strategy-income-planner](https://brazzlematt.github.io/strategy-income-planner)
+**Live version:** [brazzlematt.github.io/strategy-income-planner](https://brazzlematt.github.io/strategy-income-planner/)
 
 ---
 
