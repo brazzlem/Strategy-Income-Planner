@@ -1450,8 +1450,8 @@ https://brazzlem.github.io/Strategy-Income-Planner/</div>
         <tr>
           <th id="colPeriod">Period</th>
           <th>Shares</th>
-          <th>Div / Period</th>
-          <th>DRIP Added</th>
+          <th id="colDivPeriod">Div / Month</th>
+          <th id="colDripPeriod">DRIP Added</th>
           <th>Total Invested</th>
           <th>Portfolio Value</th>
           <th>Return %</th>
@@ -1888,17 +1888,30 @@ function drawChart(data, sharePrice, goalMonth=null, goalTarget=0) {
 function buildTable(data, totalMonths, goalMonth=null, goalTarget=0) {
   const isYears = periodMode==='years' && totalMonths>12;
   document.getElementById('colPeriod').textContent = isYears ? 'Year' : 'Month';
+  document.getElementById('colDivPeriod').textContent = isYears ? 'Ann. Dividend' : 'Div / Month';
+  document.getElementById('colDripPeriod').textContent = isYears ? 'Ann. DRIP Shrs' : 'DRIP Added';
   document.getElementById('tableLabel').textContent = isYears ? '▸ Yearly Breakdown' : '▸ Monthly Breakdown';
 
   let rows = [];
   if (isYears) {
     for (let y=1; y<=Math.ceil(totalMonths/12); y++) {
-      const idx = Math.min(y*12, totalMonths)-1;
-      if (idx < data.length) rows.push({label:`Year ${y}`, ...data[idx]});
+      const startIdx = (y-1)*12;
+      const endIdx = Math.min(y*12, totalMonths)-1;
+      if (endIdx < data.length) {
+        const yearSlice = data.slice(startIdx, endIdx+1);
+        const annualDividend = yearSlice.reduce((sum,d)=>sum+d.dividend,0);
+        const annualDripShares = yearSlice.reduce((sum,d)=>sum+d.dripShares,0);
+        rows.push({
+          label:`Year ${y}`,
+          ...data[endIdx],
+          displayIncome: annualDividend,
+          displayDrip: annualDripShares
+        });
+      }
     }
   } else {
     const step = Math.max(1,Math.ceil(data.length/120));
-    rows = data.filter((_,i)=>i%step===0||i===data.length-1).map(d=>({label:`Mo ${d.month}`,...d}));
+    rows = data.filter((_,i)=>i%step===0||i===data.length-1).map(d=>({label:`Mo ${d.month}`,...d, displayIncome: d.monthlyIncome, displayDrip: d.dripShares}));
   }
 
   // Find which row contains the goal month
@@ -1916,8 +1929,8 @@ function buildTable(data, totalMonths, goalMonth=null, goalTarget=0) {
       <tr style="${isGoalRow ? 'background:rgba(26,232,122,0.06);' : ''}">
         <td class="c-dim" style="${isGoalRow ? 'color:var(--green);font-weight:600;' : ''}">${d.label}</td>
         <td class="c-orange">${fmtN(d.shares,3)}</td>
-        <td class="c-green" style="${isGoalRow ? 'font-weight:700;font-size:13px;' : ''}">$${fmt2(d.monthlyIncome)}</td>
-        <td class="c-dim">+${fmtN(d.dripShares,4)}</td>
+        <td class="c-green" style="${isGoalRow ? 'font-weight:700;font-size:13px;' : ''}">$${fmt2(d.displayIncome)}</td>
+        <td class="c-dim">+${fmtN(d.displayDrip,4)}</td>
         <td>$${fmt2(d.totalInvested)}</td>
         <td class="c-green">$${fmtK(d.portfolioValue)}</td>
         <td class="${d.totalReturn>=0?'c-green':''}" style="${d.totalReturn<0?'color:var(--red)':''}">
@@ -1937,7 +1950,7 @@ function buildTable(data, totalMonths, goalMonth=null, goalTarget=0) {
                 <div class="milestone-title">INCOME GOAL REACHED</div>
                 <div class="milestone-detail">${periodLabel} · $${fmt2(goalTarget)}/month target achieved · $${fmt2(goalTarget*12)}/year in passive income</div>
               </div>
-              <div class="milestone-badge">$${fmt2(d.monthlyIncome)}<span>/mo</span></div>
+              <div class="milestone-badge">$${fmt2(isYears ? d.displayIncome : d.monthlyIncome)}<span>${isYears ? '/yr' : '/mo'}</span></div>
             </div>
           </td>
         </tr>`;
